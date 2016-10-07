@@ -224,10 +224,74 @@ class Form:
 
         pass
 
+    def question9(self):
+        self.cursor.execute("select RunwayID, REApproachLights from tblRunwaySC WHERE FAAID='{}'".format(self.FAAID))
+        rows = self.cursor.fetchall()
+
+        def lighting_tally(variable):
+            reils = 0
+            papi_vgsi = 0
+            als_odals = 0
+            if fnmatch.fnmatchcase(variable, "*REILS*"):
+                reils += 1
+            elif fnmatch.fnmatchcase(variable, "PAPI") or fnmatch.fnmatchcase(variable, 'VGSI'):
+                papi_vgsi += 1
+            elif fnmatch.fnmatchcase(variable, "ASL*") or fnmatch.fnmatchcase(variable, "ODALS"):
+                als_odals += 1
+            return {
+                'reils': reils,
+                'papi_vgsi': papi_vgsi,
+                'als_odals': als_odals
+            }
+
+        if rows:
+            for row in rows:
+                if row[0] in self.runways:
+                    if row[1]:
+                        self.runways[row[0]]['approach_lighting'] = row[1].upper()
+                    else:
+                        self.runways[row[0]]['approach_lighting'] = "UNK"
+                else:
+                    print("runway ID from question 9 was not included in the class initialization :: {}".format(row[0]))
+                    if row[0] not in ['H1', 'H2']:
+                        raise Exception("runway ID from question 9 was not included in the class initialization :: {}"
+                                        .format(row[0]))
+
+            # process each runway end
+            i = 21
+            t = 1
+            for rnwy in iter(self.runways):
+                if t == 1:
+                    self.fields.append(("RUNWAY END", rnwy))
+                if t > 1:
+                    self.fields.append(("RUNWAY END_{}".format(t), rnwy))
+
+                lighting = self.runways[rnwy]['approach_lighting']
+                results = lighting_tally(lighting)
+
+                if results['reils']:
+                    self.fields.append(("Check Box{}".format(i), "Yes"))
+                else:
+                    self.fields.append(("Check Box{}".format(i + 1), "Yes"))
+                if results['papi_vgsi']:
+                    self.fields.append(("Check Box{}".format(i + 8), "Yes"))
+                else:
+                    self.fields.append(("Check Box{}".format(i + 9), "Yes"))
+                if results['als_odals']:
+                    self.fields.append(("Check Box{}".format(i + 16), "Yes"))
+                else:
+                    self.fields.append(("Check Box{}".format(i + 17), "Yes"))
+                i += 2
+                t += 1
+
+        pass
+
     def process(self):
         self.question1()
         self.question5()
         self.question8()
+        self.question9()
+
         fdf = forge_fdf("", self.fields, [], [], [])
         fdf_file = open("data.fdf", "wb")
         fdf_file.write(fdf)
