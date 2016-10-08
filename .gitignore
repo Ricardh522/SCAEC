@@ -1,5 +1,7 @@
 # Created by .ignore support plugin (hsz.mobi)
-/venv/
+venv/
 .idea/
 *.accdb
 **/*/output/
+/SCAEC/venv/pip-selfcheck.json
+/SCAEC/venv/pyvenv.cfg

@@ -7,6 +7,10 @@ import fnmatch
 dir = os.path.join(os.path.dirname(os.path.abspath(__file__)), "pdfs")
 os.chdir(dir)
 form_pdf = r"fixture_form.pdf"
+#clean output folder
+if os.path.exists(os.path.join(dir, 'output')):
+    os.removedirs(os.path.join(dir, 'output'))
+
 acc_db = r"C:\Users\rhughes\OneDrive - Arora Engineers, Inc\ZZ_AroraDocuments\Projects\South Carolina Aeronautics\SCAC_SYSTEM_PLAN_INVENTORY_QUESTIONAIRE.accdb"
 cxn = pypyodbc.connect(r'Driver={Microsoft Access Driver (*.mdb, *.accdb)};DBQ=' + acc_db)
 crsr = cxn.cursor()
