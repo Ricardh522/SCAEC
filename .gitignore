@@ -3,5 +3,3 @@ venv/
 .idea/
 *.accdb
 **/*/output/
-/SCAEC/venv/pip-selfcheck.json
-/SCAEC/venv/pyvenv.cfg
