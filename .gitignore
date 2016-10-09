@@ -1,7 +1,8 @@
 # Created by .ignore support plugin (hsz.mobi)
-venv/
+src/app/venv/
 .idea/
 *.accdb
 **/*/output/
 SCAC_SYSTEM_PLAN_INVENTORY_QUESTIONAIRE.accdb
 /SCAC_SYSTEM_PLAN_INVENTORY_QUESTIONAIRE.laccdb
+node_modules/

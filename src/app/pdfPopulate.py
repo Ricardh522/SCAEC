@@ -3,13 +3,14 @@ import subprocess
 from fdfgen import forge_fdf
 import pypyodbc
 import fnmatch
+import shutil
 
 dir = os.path.join(os.path.dirname(os.path.abspath(__file__)), "pdfs")
 os.chdir(dir)
 form_pdf = r"fixture_form.pdf"
 #clean output folder
 if os.path.exists(os.path.join(dir, 'output')):
-    os.removedirs(os.path.join(dir, 'output'))
+    shutil.rmtree(os.path.join(dir, 'output'))
 
 os.mkdir(os.path.join(dir, 'output'))
 
@@ -329,7 +330,7 @@ else:
 
 
 if __name__ == "__main__":
-    target_fields = build_fields()
+    # target_fields = build_fields()
     airports = get_airports(cursor=crsr)
     for x in airports:
         FAAID = x[0]
