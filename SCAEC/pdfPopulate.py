@@ -11,7 +11,10 @@ form_pdf = r"fixture_form.pdf"
 if os.path.exists(os.path.join(dir, 'output')):
     os.removedirs(os.path.join(dir, 'output'))
 
-acc_db = r"C:\Users\rhughes\OneDrive - Arora Engineers, Inc\ZZ_AroraDocuments\Projects\South Carolina Aeronautics\SCAC_SYSTEM_PLAN_INVENTORY_QUESTIONAIRE.accdb"
+os.mkdir(os.path.join(dir, 'output'))
+
+acc_db = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))),
+                      "SCAC_SYSTEM_PLAN_INVENTORY_QUESTIONAIRE.accdb")
 cxn = pypyodbc.connect(r'Driver={Microsoft Access Driver (*.mdb, *.accdb)};DBQ=' + acc_db)
 crsr = cxn.cursor()
 
@@ -322,7 +325,7 @@ else:
 if os.path.exists(acc_db):
     print("located the access database")
 else:
-    raise Exception("form_pdf has not been found")
+    raise Exception("access database has not been found")
 
 
 if __name__ == "__main__":
