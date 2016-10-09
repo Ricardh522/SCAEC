@@ -8,3 +8,4 @@ SCAC_SYSTEM_PLAN_INVENTORY_QUESTIONAIRE.accdb
 node_modules/
 src/
 !src/app/
+**/db.sqlite3
