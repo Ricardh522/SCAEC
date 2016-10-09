@@ -1,0 +1,19 @@
+{
+  "name": "scaec",
+  "description": "scrpdata",
+  "main": "main.js",
+  "authors": [
+    "Richard Hughes <richardh522@gmail.com>"
+  ],
+  "license": "MIT",
+  "homepage": "https://github.com/Ricardh522/SCAEC",
+  "private": true,
+  "ignore": [
+    "**/.*",
+    "node_modules",
+    "bower_components",
+    "src",
+    "test",
+    "tests"
+  ]
+}
