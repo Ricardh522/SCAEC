@@ -1,9 +1,11 @@
 /**
  * Created by rich on 10/9/2016.
  */
+var loadModule = "app/main"
 // Configuration Object for Dojo Loader:
 dojoConfig = {
     baseUrl: "src/", // Where we will put our packages
+    selectorEngine: "lite",
     async: 1, // We want to make sure we are using the "modern" loader
     hasCache: {
         "host-node": 1, // Ensure we "force" the loader into Node.js mode
@@ -19,7 +21,8 @@ dojoConfig = {
     },{
         name: "app",
         location: "app"
-    }]
+    }],
+    deps: [ loadModule ]
 };
 
 // Now load the Dojo loader

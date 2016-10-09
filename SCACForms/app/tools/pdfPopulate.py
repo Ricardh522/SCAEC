@@ -5,7 +5,7 @@ import pypyodbc
 import fnmatch
 import shutil
 
-dir = os.path.join(os.path.dirname(os.path.abspath(__file__)), "pdfs")
+dir = os.path.join(os.path.dirname(os.path.abspath(__file__)), "../../../SCAEC/app/pdfs")
 os.chdir(dir)
 form_pdf = r"fixture_form.pdf"
 #clean output folder
