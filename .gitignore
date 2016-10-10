@@ -2,7 +2,7 @@
 **/venv/
 .idea/
 *.accdb
-**/*/output/
+SCACForms/app/tools/pdfs/output/
 SCAC_SYSTEM_PLAN_INVENTORY_QUESTIONAIRE.accdb
 /SCAC_SYSTEM_PLAN_INVENTORY_QUESTIONAIRE.laccdb
 node_modules/

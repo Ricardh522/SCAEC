@@ -15,7 +15,7 @@ if os.path.exists(os.path.join(dir, 'output')):
 os.mkdir(os.path.join(dir, 'output'))
 
 acc_db = os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))),
-                      "SCAC_SYSTEM_PLAN_INVENTORY_QUESTIONAIRE.accdb")
+                      "SCAC_SYSTEM_PLAN_INVENTORY_QUESTIONAIRE_version2.accdb")
 cxn = pypyodbc.connect(r'Driver={Microsoft Access Driver (*.mdb, *.accdb)};DBQ=' + acc_db)
 crsr = cxn.cursor()
 
@@ -137,24 +137,94 @@ class Form:
 
     def question1(self):
         self.fields.append(("Airport Name", self.Name))
-        self.cursor.execute("select ContactPhoneNo, Email from tblFacilities WHERE FAAID='{}'".format(self.FAAID))
+        self.cursor.execute("select KeyContact, AirportManager, Sal, FirstName, LastName, Title, Phone, Email from tblDirectory WHERE Faaid='{}'".format(self.FAAID))
         rows = self.cursor.fetchall()
         contact = {
-            'name': [],
-            'phone': [],
-            'email': []
+            "type": "",
+            'name': "",
+            'title': "",
+            'phone': "",
+            'email': ""
         }
-        if rows:
-            for x in rows:
-                if x[0]:
-                    contact['name'].append(x[0].split("-")[0].strip())
-                    contact['phone'].append("-".join(x[0].split("-")[1:]).strip())
-                if x[1]:
-                    contact['email'].append(x[1].strip())
 
-        self.fields.append(("Contact Name", " ".join(contact['name'])))
-        self.fields.append(("Phone", " ".join(contact['phone'])))
-        self.fields.append(("Email", " ".join(contact['email'])))
+        if rows:
+            for row in rows:
+                KeyContact, AirportManager, Sal, FirstName, LastName, Title, Phone, Email = row
+                fields = [KeyContact, AirportManager, Sal, FirstName, LastName, Title, Phone, Email]
+
+                if row[1]:
+                    if contact['type'] != 'manager':
+                        contact['name'] = "{} {} {}".format(Sal, FirstName, LastName)
+                        contact['title'] = Title
+                        contact['phone'] = Phone
+                        contact['email'] = Email
+                        contact['type'] = 'manager'
+
+                elif row[0]:
+                    if contact['type'] != 'manager':
+                        contact['name'] = "{} {} {}".format(Sal, FirstName, LastName)
+                        contact['title'] = Title
+                        contact['phone'] = Phone
+                        contact['email'] = Email
+                        contact['type'] = 'contact'
+
+        self.fields.append(("Contact Name", contact['name']))
+        self.fields.append(("Title", contact['title']))
+        self.fields.append(("Phone", contact['phone']))
+        self.fields.append(("Email", contact['email']))
+
+    def question2(self):
+        self.cursor.execute("select Total, InfoDate from BasedAircraftByYear WHERE FAAID='{}'".format(self.FAAID))
+        rows = self.cursor.fetchall()
+        based = dict()
+        if len(rows):
+            for row in rows:
+                total = int(row[0])
+                year = row[1].split("/")[-1]
+                based[year] = total
+        for year in based:
+            self.fields.append(("{}BASED AIRCRAFT".format(year), based[year]))
+
+    def question3(self):
+        self.cursor.execute("select AirCarrier, AirTaxi, LocalOps, ItinOps, MilitaryOps, Total, OpYear from OperationsByYear WHERE FAAID='{}'".format(self.FAAID))
+        rows = self.cursor.fetchall()
+        ops = dict()
+        if len(rows):
+            for row in rows:
+                air_carrier, air_taxi, local_ops, itin_ops, military_ops, total_ops, year = row
+                fields = [air_carrier, air_taxi, local_ops, itin_ops, military_ops, total_ops, year]
+                new_fields = list()
+                for x in fields[:-1]:
+                    if x is None:
+                        new_fields.append(0)
+                    else:
+                        new_fields.append("{:,}".format(int(x)))
+                new_fields.append(int(year))
+                ops[new_fields[6]] = {
+                    "air_carrier": new_fields[0],
+                    "air_taxi": new_fields[1],
+                    "local_ops": new_fields[2],
+                    "itin_ops": new_fields[3],
+                    "military_ops": new_fields[4],
+                    "total_ops": new_fields[5]
+                }
+        keys = list(ops.keys())
+        keys.sort()
+        for year in keys:
+            obj = ops[year]
+            if year == 2008:
+                start = 1
+                self.fields.append(("undefined", obj["air_carrier"]))
+            else:
+                dif = year - 2008
+                start = dif + 1
+                self.fields.append(("undefined_{}".format(start), obj["air_carrier"]))
+
+            self.fields.append(("undefined_{}".format(start + 9), obj["air_taxi"]))
+            self.fields.append(("undefined_{}".format(start + 18), obj["military_ops"]))
+            self.fields.append(("undefined_{}".format(start + 27), obj["itin_ops"]))
+            self.fields.append(("undefined_{}".format(start + 36), obj["local_ops"]))
+            self.fields.append(("undefined_{}".format(start + 45), obj["total_ops"]))
 
     def question5(self):
         self.cursor.execute("select FuelType1, FuelType2, FuelType3 from tblAirportSC WHERE FAAID='{}'".format(self.FAAID))
@@ -233,72 +303,206 @@ class Form:
         pass
 
     def question9(self):
-        self.cursor.execute("select RunwayID, REApproachLights from tblRunwaySC WHERE FAAID='{}'".format(self.FAAID))
+        self.cursor.execute("select RunwayID, BaseEndID, REID, BeREIL, BeSlopeIndicators, BeApproachLights,"
+                            "REREIL, RESlopeIndicators, REApproachLights from tblRunwaySC WHERE FAAID='{}'".format(self.FAAID))
         rows = self.cursor.fetchall()
-
-        def lighting_tally(variable):
-            reils = 0
-            papi_vgsi = 0
-            als_odals = 0
-            if fnmatch.fnmatchcase(variable, "*REILS*"):
-                reils += 1
-            elif fnmatch.fnmatchcase(variable, "PAPI") or fnmatch.fnmatchcase(variable, 'VGSI'):
-                papi_vgsi += 1
-            elif fnmatch.fnmatchcase(variable, "ASL*") or fnmatch.fnmatchcase(variable, "ODALS"):
-                als_odals += 1
-            return {
-                'reils': reils,
-                'papi_vgsi': papi_vgsi,
-                'als_odals': als_odals
-            }
-
         if rows:
-            for row in rows:
-                if row[0] in self.runways:
-                    if row[1]:
-                        self.runways[row[0]]['approach_lighting'] = row[1].upper()
-                    else:
-                        self.runways[row[0]]['approach_lighting'] = "UNK"
+            filtered_rows = []
+            for x in rows:
+                if x[0] not in ['H1', 'H2', 'H']:
+                    filtered_rows.append(x)
+
+            if len(filtered_rows) > 2:
+                rem_rows = []
+                # get the two longest runways
+                runways = list(self.runways.keys())
+                lengths = []
+                for run in runways:
+                    lengths.append(self.runways[run]['length'])
+                lengths.sort(reverse=True)
+                lengths = lengths[:2]
+
+                for run in runways:
+                    if self.runways[run]['length'] not in lengths:
+                        for filt in filtered_rows:
+                            if filt[0] == run:
+                                rem_rows.append(filt)
+                print("These runways for airport '{}' will not fit on the questionnaire :: {}".format(self.FAAID, rem_rows))
+                filtered_rows = [x for x in filtered_rows if x not in rem_rows]
+
+            for row in filtered_rows:
+                RunwayID, BaseEndID, REID, BeREIL, BeSlopeIndicators, BeApproachLights,\
+                REREIL, RESlopeIndicators, REApproachLights = row
+
+                runway_id = row[0]
+                if runway_id in self.runways:
+                    self.runways[runway_id]["Base"] = {
+                        'name': BaseEndID,
+                        'REIL': False,
+                        'PAPI': False,
+                        'ALS': False
+                    }
+
+                    self.runways[runway_id]["RE"] = {
+                        'name': REID,
+                        'REIL': False,
+                        'PAPI': False,
+                        'ALS': False
+                    }
+
+                    base_obj = self.runways[runway_id]["Base"]
+
+                    if BeREIL is not None and BeREIL not in ["", "No", "NO", "N"]:
+                        base_obj['REIL'] = True
+                    if BeSlopeIndicators is not None and BeSlopeIndicators not in ["", "No", "NO", "N"]:
+                        base_obj['PAPI'] = True
+                    if BeApproachLights is not None and BeApproachLights not in ["", "No", "NO", "N"]:
+                        base_obj['ALS'] = True
+
+                    re_obj = self.runways[runway_id]["RE"]
+                    if REREIL is not None and REREIL not in ["", "No", "NO", "N"]:
+                        re_obj['REIL'] = True
+                    if RESlopeIndicators is not None and RESlopeIndicators not in ["", "No", "NO", "N"]:
+                        re_obj['PAPI'] = True
+                    if REApproachLights is not None and REApproachLights not in ["", "No", "NO", "N"]:
+                        re_obj['ALS'] = True
+
+
                 else:
                     print("runway ID from question 9 was not included in the class initialization :: {}".format(row[0]))
                     if row[0] not in ['H1', 'H2']:
-                        raise Exception("runway ID from question 9 was not included in the class initialization :: {}"
-                                        .format(row[0]))
+                        raise Exception("runway ID from question 9 was not included in the class initialization :: {} :: FAAID-{}"
+                                        .format(row[0], self.FAAID))
 
             # process each runway end
-            i = 21
             t = 1
-            for rnwy in iter(self.runways):
+            i = 21
+            for rnwy in filtered_rows:
+                runway_id = rnwy[0]
+                base_obj = self.runways[runway_id]["Base"]
                 if t == 1:
-                    self.fields.append(("RUNWAY END", rnwy))
+                    self.fields.append(("RUNWAY END", base_obj['name']))
                 if t > 1:
-                    self.fields.append(("RUNWAY END_{}".format(t), rnwy))
+                    self.fields.append(("RUNWAY END_{}".format(t), base_obj['name']))
 
-                lighting = self.runways[rnwy]['approach_lighting']
-                results = lighting_tally(lighting)
-
-                if results['reils']:
+                if base_obj['REIL']:
                     self.fields.append(("Check Box{}".format(i), "Yes"))
                 else:
-                    self.fields.append(("Check Box{}".format(i + 1), "Yes"))
-                if results['papi_vgsi']:
+                    self.fields.append(("Check Box{}".format(i+1), "Yes"))
+                if base_obj['PAPI']:
                     self.fields.append(("Check Box{}".format(i + 8), "Yes"))
                 else:
                     self.fields.append(("Check Box{}".format(i + 9), "Yes"))
-                if results['als_odals']:
+                if base_obj['ALS']:
                     self.fields.append(("Check Box{}".format(i + 16), "Yes"))
                 else:
                     self.fields.append(("Check Box{}".format(i + 17), "Yes"))
-                i += 2
+
                 t += 1
+                i += 2
+
+                re_obj = self.runways[runway_id]["RE"]
+                self.fields.append(("RUNWAY END_{}".format(t), re_obj['name']))
+
+                if re_obj['REIL']:
+                    self.fields.append(("Check Box{}".format(i), "Yes"))
+                else:
+                    self.fields.append(("Check Box{}".format(i + 1), "Yes"))
+                if re_obj['PAPI']:
+                    self.fields.append(("Check Box{}".format(i + 8), "Yes"))
+                else:
+                    self.fields.append(("Check Box{}".format(i + 9), "Yes"))
+                if re_obj['ALS']:
+                    self.fields.append(("Check Box{}".format(i + 16), "Yes"))
+                else:
+                    self.fields.append(("Check Box{}".format(i + 17), "Yes"))
+                t += 1
+                i += 2
 
         pass
 
+    def question12(self):
+        self.cursor.execute("select TAXIWAY_SYSTEM  from TaxiwaySystem WHERE FAAID='{}'".format(self.FAAID))
+        rows = self.cursor.fetchall()
+        if rows:
+            target_fields = {
+                "full_parallel": "Check Box86",
+                "partial_parallel": "Check Box87",
+                "turn_around_both": "Check Box88",
+                "turn_around_one": "Check Box89_0",
+                "no_supporting": "Check Box89_1"
+            }
+            for row in rows:
+                if 'NO SUPPORTING' in row[0].upper():
+                    self.fields.append((target_fields['no_supporting'], "Yes"))
+                elif 'ONE TURN' in row[0].upper():
+                    self.fields.append((target_fields['turn_around_one'], "Yes"))
+                elif 'FULL PARALLEL' in row[0].upper():
+                    self.fields.append((target_fields['full_parallel'], "Yes"))
+                elif 'BOTH TURN' in row[0].upper():
+                    self.fields.append((target_fields['turn_around_both'], "Yes"))
+                elif 'PARTIAL PARALLEL' in row[0].upper():
+                    self.fields.append((target_fields['partial_parallel'], "Yes"))
+
+    def question16(self):
+        self.cursor.execute("select StaType from tblASOS_AWOS WHERE FAAID='{}'".format(self.FAAID))
+        rows = self.cursor.fetchall()
+        weather_types = {
+            "AWOS": False,
+            "ASOS": False,
+            "Super Unicom": False,
+            "Weather Observer": False
+        }
+        if rows:
+            for row in rows:
+                if row[0] is not None:
+                    if 'AWOS' in row[0].upper():
+                        weather_types["AWOS"] = True
+                    elif 'ASOS' in row[0].upper():
+                        weather_types["ASOS"] = True
+
+        for k, v in iter(weather_types.items()):
+            if v:
+                if k == "AWOS":
+                    self.fields.append(("Check Box94", "Yes"))
+                elif k == "ASOS":
+                    self.fields.append(("Check Box95", "Yes"))
+
+    def question18(self):
+        self.cursor.execute("select Thangars, THangarsSqFt, ThangarsRate, CorporateHangars, CorporateHangarsSqFt, CorporateHangarsRate,"\
+                            "BoxHangars, BoxHangarsSqFt, BoxHangarsRate, HangarPorts, HangarPortsSqFt, HangarPortsRate,"\
+                            "UnknownHangars, UnknownHangarsSqFt, UnknownHangarsRate, TieDowns, TieDownsRate from tblFacilities WHERE FAAID='{}'".format(self.FAAID))
+        rows = self.cursor.fetchall()
+        hangars = dict()
+        if len(rows):
+            for row in rows:
+                THangars, THangarsSqFt, ThangarsRate, CorporateHangars, CorprateHangarsSqFt, CorporateHangarsRate,\
+                BoxHangars, BoxHangarsSqFt, BoxHangarsRate, HangerPorts, HangarPortsSqFt, HangarPortsRate,\
+                UnknownHangars, UnknownHangarsSqFt, UnknownHangarsRate, TieDowns, TieDownsRate = row
+
+                fields = [THangars, THangarsSqFt, ThangarsRate, CorporateHangars, CorprateHangarsSqFt, CorporateHangarsRate,
+                BoxHangars, BoxHangarsSqFt, BoxHangarsRate, HangerPorts, HangarPortsSqFt, HangarPortsRate,
+                UnknownHangars, UnknownHangarsSqFt, UnknownHangarsRate]
+
+                target_fields = ["undefined_{}".format(i) for i in range(55, 70)]
+
+                fields.extend([TieDowns, TieDownsRate])
+                target_fields.extend(["undefined_70", "undefined_72"])
+
+                mixed = zip(target_fields, fields)
+                for combo in mixed:
+                    self.fields.append(combo)
+
     def process(self):
         self.question1()
+        self.question2()
+        self.question3()
         self.question5()
         self.question8()
         self.question9()
+        self.question12()
+        self.question16()
+        self.question18()
 
         fdf = forge_fdf("", self.fields, [], [], [])
         fdf_file = open("data.fdf", "wb")
