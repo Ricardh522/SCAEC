@@ -1,0 +1,14 @@
+{% extends "base.html" %}
+{% load static %}
+{% block title %}HTML parser{% endblock %}
+{% block scripts %}
+    <script data-dojo-config="selectorEngine: 'lite', async:true" src="//ajax.googleapis.com/ajax/libs/dojo/1.11.2/dojo/dojo.js"></script>
+{% endblock %}
+{% block content %}
+    <div id="main">
+        {{ main_content|safe }}
+    </div>
+{% endblock %}
+{% block sub-scripts %}
+<script src="{% static 'app/main.js' %}"></script>
+{% endblock %}

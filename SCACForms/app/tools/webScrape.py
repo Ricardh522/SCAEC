@@ -1,5 +1,5 @@
 import requests
-from lxml import html, etree
+#from lxml import html, etree
 from html.parser import HTMLParser
 from html.entities import name2codepoint
 import os

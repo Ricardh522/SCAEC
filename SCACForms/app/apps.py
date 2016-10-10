@@ -1,5 +1,6 @@
 from django.apps import AppConfig
 
 
-class AppConfig(AppConfig):
+class MyAppConfig(AppConfig):
     name = 'app'
+    verbose_name = 'scraper app'

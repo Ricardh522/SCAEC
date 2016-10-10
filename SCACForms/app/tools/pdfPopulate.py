@@ -5,7 +5,7 @@ import pypyodbc
 import fnmatch
 import shutil
 
-dir = os.path.join(os.path.dirname(os.path.abspath(__file__)), "../../../SCAEC/app/pdfs")
+dir = os.path.join(os.path.dirname(os.path.abspath(__file__)), "pdfs")
 os.chdir(dir)
 form_pdf = r"fixture_form.pdf"
 #clean output folder
@@ -14,7 +14,7 @@ if os.path.exists(os.path.join(dir, 'output')):
 
 os.mkdir(os.path.join(dir, 'output'))
 
-acc_db = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))),
+acc_db = os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))),
                       "SCAC_SYSTEM_PLAN_INVENTORY_QUESTIONAIRE.accdb")
 cxn = pypyodbc.connect(r'Driver={Microsoft Access Driver (*.mdb, *.accdb)};DBQ=' + acc_db)
 crsr = cxn.cursor()
