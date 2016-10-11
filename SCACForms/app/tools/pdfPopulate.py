@@ -421,6 +421,167 @@ class Form:
 
         pass
 
+    def question10(self):
+        self.cursor.execute("select RWY_BE, ILS_BE, RNAV_BE, LPV_BE, VISUAL_BE,"
+                            "OTHER_BE, RWY_RE, ILS_RE, RNAV_RE, LPV_RE, VISUAL_RE,"
+                            "OTHER_RE from ApproachLighting WHERE FAAID='{}'".format(self.FAAID))
+        rows = self.cursor.fetchall()
+        if rows:
+            t = 5
+            i = 45
+            for row in rows:
+                RWY_BE, ILS_BE, RNAV_BE, LPV_BE, VISUAL_BE,\
+                OTHER_BE, RWY_RE, ILS_RE, RNAV_RE, LPV_RE, VISUAL_RE,\
+                OTHER_RE = row
+
+                self.fields.append(("RUNWAY END_{}".format(t), int(RWY_BE)))
+                t += 1
+
+                if ILS_BE == "Y":
+                    self.fields.append(("Check Box{}".format(i), "Yes"))
+                else:
+                    self.fields.append(("Check Box{}".format(i+1), "Yes"))
+                if RNAV_BE == "Y":
+                    self.fields.append(("Check Box{}".format(i+8), "Yes"))
+                else:
+                    self.fields.append(("Check Box{}".format(i+9), "Yes"))
+                if LPV_BE == "Y":
+                    self.fields.append(("Check Box{}".format(i+16), "Yes"))
+                else:
+                    self.fields.append(("Check Box{}".format(i+17), "Yes"))
+                if VISUAL_BE == "Y":
+                    self.fields.append(("Check Box{}".format(i+24), "Yes"))
+                else:
+                    self.fields.append(("Check Box{}".format(i+25), "Yes"))
+                if OTHER_BE == "Y":
+                    self.fields.append(("Check Box{}".format(i+32), "Yes"))
+                else:
+                    self.fields.append(("Check Box{}".format(i+33), "Yes"))
+
+                i += 2
+
+                self.fields.append(("RUNWAY END_{}".format(t), int(RWY_RE)))
+                t += 1
+
+                if ILS_RE == "Y":
+                    self.fields.append(("Check Box{}".format(i), "Yes"))
+                else:
+                    self.fields.append(("Check Box{}".format(i + 1), "Yes"))
+                if RNAV_RE == "Y":
+                    self.fields.append(("Check Box{}".format(i + 8), "Yes"))
+                else:
+                    self.fields.append(("Check Box{}".format(i + 9), "Yes"))
+                if LPV_RE == "Y":
+                    self.fields.append(("Check Box{}".format(i + 16), "Yes"))
+                else:
+                    self.fields.append(("Check Box{}".format(i + 17), "Yes"))
+                if VISUAL_RE == "Y":
+                    self.fields.append(("Check Box{}".format(i + 24), "Yes"))
+                else:
+                    self.fields.append(("Check Box{}".format(i + 25), "Yes"))
+                if OTHER_RE == "Y":
+                    self.fields.append(("Check Box{}".format(i + 32), "Yes"))
+                else:
+                    self.fields.append(("Check Box{}".format(i + 33), "Yes"))
+
+                i += 2
+
+    def question11(self):
+        self.cursor.execute("select RWY_BE, BE_CLOSE_IN, RWY_RE, RE_CLOSE_IN  from RunwayObstructions_CloseIn WHERE FAAID='{}'".format(self.FAAID))
+        rows = self.cursor.fetchall()
+        obstructions = dict()
+
+        if rows:
+            for row in rows:
+                RWY_BE, BE_CLOSE_IN, RWY_RE, RE_CLOSE_IN = row
+                RWY_BE = RWY_BE.zfill(2)
+                RWY_RE = RWY_RE.zfill(2)
+
+                obstructions["{}/{}".format(RWY_BE, RWY_RE)] = {
+                        RWY_BE: dict(),
+                        RWY_RE: dict()
+                }
+                main_obj = obstructions["{}/{}".format(RWY_BE, RWY_RE)]
+                be_end = main_obj[RWY_BE]
+                if BE_CLOSE_IN == "Y":
+                    be_end['CloseIn'] = "Yes"
+                else:
+                    be_end['CloseIn'] = "No"
+
+                re_end = main_obj[RWY_RE]
+                if RE_CLOSE_IN == "Y":
+                    re_end['CloseIn'] = "Yes"
+                else:
+                    re_end['CloseIn'] = "No"
+
+            self.cursor.execute("select BaseEndID, REID, BEThreshLength, BeCODescript, BeCOMarked, BECOHeight, BECODistance, BECOOffset,"
+                                "BECOClearance, REThreshLength, RECODescript, RECOMarked, RECOHeight, RECODistance,"
+                                "RECOOffset, RECOClearance from tblRunwaySC where FAAID='{}'".format(self.FAAID))
+            rows = self.cursor.fetchall()
+            if rows:
+                for row in rows:
+                    BaseEndID, REID, BEThreshLength, BeCODescript, BeCOMarked, BECOHeight, BECODistance, BECOOffset,\
+                    BECOClearance, REThreshLength, RECODescript, RECOMarked, RECOHeight, RECODistance,\
+                    RECOOffset, RECOClearance = row
+
+                    if BaseEndID not in ['H1', 'H2', 'H'] and REID not in ['H1', 'H2', 'H']:
+
+                        runway = "{}/{}".format(BaseEndID, REID)
+                        if runway in obstructions:
+                            main_obj = obstructions[runway]
+                            be_obj = main_obj[BaseEndID]
+                            be_obj['BEThreshLength'] = BEThreshLength
+                            be_obj['BeCODescript'] = BeCODescript
+                            be_obj['BeCOMarked'] = BeCOMarked
+                            be_obj['BECOHeight'] = BECOHeight
+                            be_obj['BECODistance'] = BECODistance
+                            be_obj['BECOOffset'] = BECOOffset
+                            be_obj['BECOClearance'] = BECOClearance
+
+                            re_obj = main_obj[REID]
+                            re_obj['REThreshLength'] = REThreshLength
+                            re_obj['RECODescript'] = RECODescript
+                            re_obj['RECOMarked'] = RECOMarked
+                            re_obj['RECOHeight'] = RECOHeight
+                            re_obj['RECODistance'] = RECODistance
+                            re_obj['RECOOffset'] = RECOOffset
+                            re_obj['RECOClearance'] = RECOClearance
+                        else:
+                            print("runway {} not found in the obstructions object {}".format(runway, obstructions))
+            t = 9
+            i = 103
+            for x in list(obstructions.keys()):
+                be_id = x.split("/")[0]
+                re_id = x.split("/")[-1]
+
+                be_atts = obstructions[x][be_id]
+                re_atts = obstructions[x][re_id]
+
+                self.fields.append(("RUNWAY END_{}".format(t), be_id))
+                t += 1
+                self.fields.append(("RUNWAY END_{}".format(t), re_id))
+                t += 1
+
+                self.fields.append(("{}".format(i), be_atts['BEThreshLength']))
+                self.fields.append(("{}".format(i+4), be_atts['BeCODescript']))
+                self.fields.append(("{}".format(i+8), be_atts['BeCOMarked']))
+                self.fields.append(("{}".format(i+12), be_atts['BECOHeight']))
+                self.fields.append(("{}".format(i+16), be_atts['BECODistance']))
+                self.fields.append(("{}".format(i+20), be_atts['BECOOffset']))
+                self.fields.append(("{}".format(i+24), be_atts['BECOClearance']))
+                self.fields.append(("{}".format(i + 28), be_atts['CloseIn']))
+                i += 1
+
+                self.fields.append(("{}".format(i), re_atts['REThreshLength']))
+                self.fields.append(("{}".format(i + 4), re_atts['RECODescript']))
+                self.fields.append(("{}".format(i + 8), re_atts['RECOMarked']))
+                self.fields.append(("{}".format(i + 12), re_atts['RECOHeight']))
+                self.fields.append(("{}".format(i + 16), re_atts['RECODistance']))
+                self.fields.append(("{}".format(i + 20), re_atts['RECOOffset']))
+                self.fields.append(("{}".format(i + 24), re_atts['RECOClearance']))
+                self.fields.append(("{}".format(i + 28), re_atts['CloseIn']))
+                i += 1
+
     def question12(self):
         self.cursor.execute("select TAXIWAY_SYSTEM  from TaxiwaySystem WHERE FAAID='{}'".format(self.FAAID))
         rows = self.cursor.fetchall()
@@ -500,6 +661,8 @@ class Form:
         self.question5()
         self.question8()
         self.question9()
+        self.question10()
+        self.question11()
         self.question12()
         self.question16()
         self.question18()
