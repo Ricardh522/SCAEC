@@ -263,6 +263,7 @@ class Form:
         if rows:
             for row in rows:
                 if row[0] not in ['H1', 'H2']:
+
                     runway = self.runways[row[0]]
                     runway['length'] = row[1]
                     runway['width'] = row[2]
@@ -312,6 +313,7 @@ class Form:
                 if x[0] not in ['H1', 'H2', 'H']:
                     filtered_rows.append(x)
 
+            #only two runways will fit on the questionaire form
             if len(filtered_rows) > 2:
                 rem_rows = []
                 # get the two longest runways
@@ -333,6 +335,9 @@ class Form:
             for row in filtered_rows:
                 RunwayID, BaseEndID, REID, BeREIL, BeSlopeIndicators, BeApproachLights,\
                 REREIL, RESlopeIndicators, REApproachLights = row
+
+                BaseEndID = str(int(BaseEndID)).zfill(2)
+                REID = str(int(REID)).zfill(2)
 
                 runway_id = row[0]
                 if runway_id in self.runways:
@@ -377,7 +382,23 @@ class Form:
             # process each runway end
             t = 1
             i = 21
+            sorted_rows = []
             for rnwy in filtered_rows:
+                runway_id = rnwy[0]
+                try:
+                    runway = self.runways[runway_id]
+                    try:
+                        primary = self.runways[runway_id]['primary']
+                        if primary:
+                            sorted_rows.insert(0, rnwy)
+                        else:
+                            sorted_rows.append(rnwy)
+                    except KeyError:
+                        print("primary not found as key in runway {}".format(runway_id))
+                except KeyError:
+                    print("runway {} not found".format(runway_id))
+
+            for rnwy in sorted_rows:
                 runway_id = rnwy[0]
                 base_obj = self.runways[runway_id]["Base"]
                 if t == 1:
@@ -429,12 +450,40 @@ class Form:
         if rows:
             t = 5
             i = 45
+            sorted_rows = []
             for row in rows:
                 RWY_BE, ILS_BE, RNAV_BE, LPV_BE, VISUAL_BE,\
                 OTHER_BE, RWY_RE, ILS_RE, RNAV_RE, LPV_RE, VISUAL_RE,\
                 OTHER_RE = row
 
-                self.fields.append(("RUNWAY END_{}".format(t), int(RWY_BE)))
+                RWY_BE = str(int(RWY_BE)).zfill(2)
+                RWY_RE = str(int(RWY_RE)).zfill(2)
+
+                runway_id = "{}/{}".format(RWY_BE, RWY_RE)
+                try:
+                    runway = self.runways[runway_id]
+                    try:
+                        if runway['primary']:
+                            sorted_rows.insert(0, row)
+                        else:
+                            sorted_rows.append(row)
+                    except KeyError:
+                        print("primary not found as key in runway {}".format(runway_id))
+                except KeyError:
+                    print("{} not found".format(runway_id))
+
+
+
+
+            for row in sorted_rows:
+                RWY_BE, ILS_BE, RNAV_BE, LPV_BE, VISUAL_BE, \
+                OTHER_BE, RWY_RE, ILS_RE, RNAV_RE, LPV_RE, VISUAL_RE, \
+                OTHER_RE = row
+
+                RWY_BE = str(int(RWY_BE)).zfill(2)
+                RWY_RE = str(int(RWY_RE)).zfill(2)
+
+                self.fields.append(("RUNWAY END_{}".format(t), RWY_BE))
                 t += 1
 
                 if ILS_BE == "Y":
@@ -460,7 +509,7 @@ class Form:
 
                 i += 2
 
-                self.fields.append(("RUNWAY END_{}".format(t), int(RWY_RE)))
+                self.fields.append(("RUNWAY END_{}".format(t), RWY_RE))
                 t += 1
 
                 if ILS_RE == "Y":
@@ -494,8 +543,8 @@ class Form:
         if rows:
             for row in rows:
                 RWY_BE, BE_CLOSE_IN, RWY_RE, RE_CLOSE_IN = row
-                RWY_BE = RWY_BE.zfill(2)
-                RWY_RE = RWY_RE.zfill(2)
+                RWY_BE = str(int(RWY_BE)).zfill(2)
+                RWY_RE = str(int(RWY_RE)).zfill(2)
 
                 obstructions["{}/{}".format(RWY_BE, RWY_RE)] = {
                         RWY_BE: dict(),
@@ -525,6 +574,8 @@ class Form:
                     RECOOffset, RECOClearance = row
 
                     if BaseEndID not in ['H1', 'H2', 'H'] and REID not in ['H1', 'H2', 'H']:
+                        BaseEndID = str(int(BaseEndID)).zfill(2)
+                        REID = str(int(REID)).zfill(2)
 
                         runway = "{}/{}".format(BaseEndID, REID)
                         if runway in obstructions:
@@ -553,15 +604,24 @@ class Form:
             for x in list(obstructions.keys()):
                 be_id = x.split("/")[0]
                 re_id = x.split("/")[-1]
+                be_atts = dict()
+                re_atts = dict()
+                if x in obstructions:
+                    if be_id in obstructions[x]:
+                        be_atts = obstructions[x][be_id]
+                    if re_id in obstructions[x]:
+                        re_atts = obstructions[x][re_id]
+                else:
+                    print("runway {} not found in obstructions object".format(x))
 
-                be_atts = obstructions[x][be_id]
-                re_atts = obstructions[x][re_id]
+
 
                 self.fields.append(("RUNWAY END_{}".format(t), be_id))
                 t += 1
                 self.fields.append(("RUNWAY END_{}".format(t), re_id))
                 t += 1
 
+                print(be_atts)
                 self.fields.append(("{}".format(i), be_atts['BEThreshLength']))
                 self.fields.append(("{}".format(i+4), be_atts['BeCODescript']))
                 self.fields.append(("{}".format(i+8), be_atts['BeCOMarked']))
@@ -604,6 +664,46 @@ class Form:
                     self.fields.append((target_fields['turn_around_both'], "Yes"))
                 elif 'PARTIAL PARALLEL' in row[0].upper():
                     self.fields.append((target_fields['partial_parallel'], "Yes"))
+
+    def question15(self):
+        self.cursor.execute("select BeaconSched, WindIndicator, SegmentedCircle from tblAirportSC WHERE FAAID='{}'".format(self.FAAID))
+        rows = self.cursor.fetchall()
+        if len(rows) >1:
+            print("More than one airport was returned for question 15 from the tblAirportSC table.")
+        if rows:
+            visual_aids = {}
+            for row in rows:
+                BeaconSched, WindIndicator, SegmentedCircle = row
+                if BeaconSched is not None:
+                    if BeaconSched.strip().upper() == 'SS-SR':
+                        visual_aids['beacon'] = True
+                    else:
+                        visual_aids['beacon'] = False
+                else:
+                    visual_aids['beacon'] = False
+
+                if WindIndicator is not None:
+                    if WindIndicator.strip().upper() in ['Y-L', 'Y']:
+                        visual_aids['wind'] = True
+                    else:
+                        visual_aids['wind'] = False
+                else:
+                    visual_aids['wind'] = False
+
+                if SegmentedCircle is not None:
+                    if SegmentedCircle.strip().upper() == "Y":
+                        visual_aids['circle'] = True
+                    else:
+                        visual_aids['circle'] = False
+                else:
+                    visual_aids['circle'] = False
+
+            if visual_aids['beacon']:
+                self.fields.append(("Check Box90", "Yes"))
+            if visual_aids['wind']:
+                self.fields.append(("Check Box91", "Yes"))
+            if visual_aids['circle']:
+                self.fields.append(("Check Box92", "Yes"))
 
     def question16(self):
         self.cursor.execute("select StaType from tblASOS_AWOS WHERE FAAID='{}'".format(self.FAAID))
@@ -664,6 +764,7 @@ class Form:
         self.question10()
         self.question11()
         self.question12()
+        self.question15()
         self.question16()
         self.question18()
 
